@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Use ps command with appropriate flags
+ps -e -o pid,ppid,user,comm | awk '
+BEGIN {
+    # Define indentation levels
+    indent = "";
+    parent_pids = "";
+}
+
+{
+    # Get process information
+    pid = $1;
+    ppid = $2;
+    user = $3;
+    command = $4;
+
+    # Check if parent process is already listed
+    if (index(parent_pids, ppid) == -1) {
+        # New parent process, reset indentation
+        indent = "";
+        parent_pids = "";
+    }
+
+    # Indent based on hierarchy
+    while (length(parent_pids) > 0 && index(parent_pids, ppid) == -1) {
+        indent = indent "  ";
+        parent_pids = substr(parent_pids, 2);
+    }
+
+    # Print process information
+    printf("%s%d %d %s %s\n", indent, pid, ppid, user, command);
+
+    # Update parent process list
+    parent_pids = parent_pids "," pid;
+}
+END {
+    # Remove leading comma
+    parent_pids = substr(parent_pids, 2);
+}'
